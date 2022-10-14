@@ -79,6 +79,8 @@ bitflags! {
         /// Registers the range for write faults.
         #[cfg(feature = "linux5_7")]
         const WRITE_PROTECT = raw::UFFDIO_REGISTER_MODE_WP;
+        #[cfg(feature = "linux5_7")]
+        const MODE_MINOR = raw::UFFDIO_REGISTER_MODE_MINOR;
     }
 }
 
