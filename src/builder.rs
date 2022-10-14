@@ -18,6 +18,7 @@ cfg_if::cfg_if! {
                 const EVENT_UNMAP = raw::UFFD_FEATURE_EVENT_UNMAP;
                 const SIGBUS = raw::UFFD_FEATURE_SIGBUS;
                 const THREAD_ID = raw::UFFD_FEATURE_THREAD_ID;
+                const MINOR_SHMEM = raw::UFFD_FEATURE_MINOR_SHMEM;
             }
         }
     } else {
