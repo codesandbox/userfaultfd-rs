@@ -23,3 +23,5 @@ nix::ioctl_readwrite!(
     _UFFDIO_WRITEPROTECT,
     uffdio_writeprotect
 );
+
+nix::ioctl_readwrite!(uffd_continue, UFFDIO, _UFFDIO_CONTINUE, uffdio_continue);
