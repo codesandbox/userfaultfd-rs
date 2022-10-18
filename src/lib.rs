@@ -138,16 +138,22 @@ impl Uffd {
         dst: *mut c_void,
         len: usize,
         wake: bool,
+        write_protect: bool,
     ) -> Result<usize> {
+        let mut mode = 0;
+
+        if !wake {
+            mode |= raw::UFFDIO_COPY_MODE_DONTWAKE;
+        }
+        if write_protect {
+            mode |= raw::UFFDIO_COPY_MODE_WP;
+        }
+
         let mut copy = raw::uffdio_copy {
             src: src as u64,
             dst: dst as u64,
             len: len as u64,
-            mode: if wake {
-                0
-            } else {
-                raw::UFFDIO_COPY_MODE_DONTWAKE
-            },
+            mode,
             copy: 0,
         };
 
@@ -225,6 +231,28 @@ impl Uffd {
                 self.as_raw_fd(),
                 &mut ioctl as *mut raw::uffdio_writeprotect,
             )?;
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "linux5_7")]
+    pub fn uffd_continue(&self, start: *mut c_void, len: usize, wake: bool) -> Result<()> {
+        let mut ioctl = raw::uffdio_continue {
+            range: raw::uffdio_range {
+                start: start as u64,
+                len: len as u64,
+            },
+            mode: if wake {
+                0
+            } else {
+                raw::UFFDIO_ZEROPAGE_MODE_DONTWAKE
+            },
+            mapped: 0,
+        };
+
+        unsafe {
+            raw::uffd_continue(self.as_raw_fd(), &mut ioctl as *mut raw::uffdio_continue)?;
         }
 
         Ok(())
