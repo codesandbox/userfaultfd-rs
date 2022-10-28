@@ -397,6 +397,8 @@ bitflags! {
         const ZEROPAGE = 1 << raw::_UFFDIO_ZEROPAGE;
         #[cfg(feature = "linux5_7")]
         const WRITE_PROTECT = 1 << raw::_UFFDIO_WRITEPROTECT;
+        #[cfg(feature = "linux5_7")]
+        const CONTINUE = 1 << raw::_UFFDIO_CONTINUE;
         const API = 1 << raw::_UFFDIO_API;
     }
 }
