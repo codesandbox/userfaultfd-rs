@@ -21,6 +21,9 @@ pub enum FaultKind {
     /// The fault was a write on a write-protected page.
     #[cfg(feature = "linux5_7")]
     WriteProtected,
+    /// The fault was a minor fault.
+    #[cfg(feature = "linux5_7")]
+    Minor,
 }
 
 /// Events from the userfaultfd object that are read by `Uffd::read_event()`.
@@ -86,7 +89,9 @@ impl Event {
                     if #[cfg(feature = "linux5_7")] {
                         let kind = if pagefault.flags & raw::UFFD_PAGEFAULT_FLAG_WP != 0 {
                             FaultKind::WriteProtected
-                        } else {
+                        } else if pagefault.flags & raw::UFFD_PAGEFAULT_FLAG_MINOR != 0 {
+                            FaultKind::Minor
+                        } else  {
                             FaultKind::Missing
                         };
                     } else {

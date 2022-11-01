@@ -663,7 +663,7 @@ mod test {
                             uffd.remove_write_protection(mapping, PAGE_SIZE, true)?;
                             break;
                         }
-                        FaultKind::Missing => {
+                        FaultKind::Minor | FaultKind::Missing => {
                             assert_eq!(addr, mapping);
                             uffd.zeropage(mapping, PAGE_SIZE, false)?;
 
