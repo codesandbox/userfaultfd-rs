@@ -23,22 +23,28 @@ fn generate_bindings() {
         .blocklist_type("__kernel_*")
         .parse_callbacks(Box::new(Callbacks {}));
 
-    if let Ok(linux_headers) = std::env::var("LINUX_HEADERS") {
-        let mut incl_dir = PathBuf::from(&linux_headers);
-        incl_dir.push("include");
-        assert!(
-            incl_dir.exists(),
-            "LINUX_HEADERS env variable contains an include/ directory"
-        );
-        incl_dir.push("uapi");
-        assert!(
-            incl_dir.exists(),
-            "LINUX_HEADERS env variable contains an include/uapi/ directory"
-        );
-        bindings = bindings
-            .clang_arg(format!("-isystem{}/include", linux_headers))
-            .clang_arg(format!("-isystem{}/include/uapi", linux_headers));
-    }
+    let linux_headers = std::fs::canonicalize(PathBuf::from("./linux-headers")).unwrap();
+
+    let mut incl_dir = PathBuf::from(&linux_headers);
+    incl_dir.push("include");
+    assert!(
+        incl_dir.exists(),
+        "LINUX_HEADERS env variable contains an include/ directory"
+    );
+    incl_dir.push("uapi");
+    assert!(
+        incl_dir.exists(),
+        "LINUX_HEADERS env variable contains an include/uapi/ directory"
+    );
+    bindings = bindings
+        .clang_arg(format!(
+            "-isystem{}/include",
+            linux_headers.to_string_lossy()
+        ))
+        .clang_arg(format!(
+            "-isystem{}/include/uapi",
+            linux_headers.to_string_lossy()
+        ));
 
     let bindings = bindings.generate().expect("binding generation failed");
 
