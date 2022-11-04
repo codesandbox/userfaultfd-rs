@@ -19,7 +19,7 @@ cfg_if::cfg_if! {
                 const SIGBUS = raw::UFFD_FEATURE_SIGBUS;
                 const THREAD_ID = raw::UFFD_FEATURE_THREAD_ID;
                 const MINOR_SHMEM = raw::UFFD_FEATURE_MINOR_SHMEM;
-                const EXACT_ADDRESS = raw::UFFD_FEATURE_EXACT_ADDRESS;
+                // const EXACT_ADDRESS = raw::UFFD_FEATURE_EXACT_ADDRESS;
             }
         }
     } else {
