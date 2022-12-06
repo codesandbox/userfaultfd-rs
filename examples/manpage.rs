@@ -3,6 +3,7 @@ use libc::{self, c_void};
 use nix::poll::{poll, PollFd, PollFlags};
 use nix::sys::mman::{mmap, MapFlags, ProtFlags};
 use nix::unistd::{sysconf, SysconfVar};
+use std::convert::TryInto;
 use std::env;
 use std::os::unix::io::AsRawFd;
 use std::ptr;
@@ -15,8 +16,8 @@ fn fault_handler_thread(uffd: Uffd) {
 
     let page = unsafe {
         mmap(
-            ptr::null_mut(),
-            page_size,
+            None,
+            page_size.try_into().unwrap(),
             ProtFlags::PROT_READ | ProtFlags::PROT_WRITE,
             MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS,
             -1,
@@ -101,8 +102,8 @@ fn main() {
 
     let addr = unsafe {
         mmap(
-            ptr::null_mut(),
-            len,
+            None,
+            len.try_into().unwrap(),
             ProtFlags::PROT_READ | ProtFlags::PROT_WRITE,
             MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS,
             -1,
