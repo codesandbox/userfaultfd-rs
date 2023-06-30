@@ -160,7 +160,13 @@ impl Uffd {
         let _ =
             raw::copy(self.as_raw_fd(), &mut copy as *mut raw::uffdio_copy).map_err(|errno| {
                 match errno {
-                    Errno::EAGAIN => Error::PartiallyCopied(copy.copy as usize),
+                    Errno::EAGAIN => {
+                        if copy.copy < 0 {
+                            Error::CopyFailed(errno)
+                        } else {
+                            Error::PartiallyCopied(copy.copy as usize)
+                        }
+                    }
                     _ => Error::CopyFailed(errno),
                 }
             })?;
@@ -192,7 +198,16 @@ impl Uffd {
         };
 
         let _ = raw::zeropage(self.as_raw_fd(), &mut zeropage as &mut raw::uffdio_zeropage)
-            .map_err(Error::ZeropageFailed)?;
+            .map_err(|errno| match errno {
+                Errno::EAGAIN => {
+                    if zeropage.zeropage < 0 {
+                        Error::ZeropageFailed(errno)
+                    } else {
+                        Error::PartiallyCopied(zeropage.zeropage as usize)
+                    }
+                }
+                _ => Error::ZeropageFailed(errno),
+            })?;
         if zeropage.zeropage < 0 {
             // shouldn't ever get here, as errno should be caught above
             Err(Error::ZeropageFailed(Errno::from_i32(
