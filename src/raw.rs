@@ -23,6 +23,8 @@ nix::ioctl_readwrite!(
     _UFFDIO_WRITEPROTECT,
     uffdio_writeprotect
 );
+#[cfg(feature = "linux5_7")]
+nix::ioctl_readwrite!(uffd_continue, UFFDIO, _UFFDIO_CONTINUE, uffdio_continue);
 
 // ioctls for /dev/userfaultfd
 
