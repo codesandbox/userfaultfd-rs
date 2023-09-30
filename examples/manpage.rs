@@ -3,10 +3,7 @@ use libc::{self, c_void};
 use nix::poll::{poll, PollFd, PollFlags};
 use nix::sys::mman::{mmap, MapFlags, ProtFlags};
 use nix::unistd::{sysconf, SysconfVar};
-use std::convert::TryInto;
-use std::env;
-use std::os::unix::io::AsRawFd;
-use std::ptr;
+use std::{convert::TryInto, env};
 use userfaultfd::{Event, Uffd, UffdBuilder};
 
 fn fault_handler_thread(uffd: Uffd) {
@@ -20,7 +17,7 @@ fn fault_handler_thread(uffd: Uffd) {
             page_size.try_into().unwrap(),
             ProtFlags::PROT_READ | ProtFlags::PROT_WRITE,
             MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS,
-            -1,
+            None::<std::os::fd::BorrowedFd>,
             0,
         )
         .expect("mmap")
@@ -32,7 +29,7 @@ fn fault_handler_thread(uffd: Uffd) {
     loop {
         // See what poll() tells us about the userfaultfd
 
-        let pollfd = PollFd::new(uffd.as_raw_fd(), PollFlags::POLLIN);
+        let pollfd = PollFd::new(&uffd, PollFlags::POLLIN);
         let nready = poll(&mut [pollfd], -1).expect("poll");
 
         println!("\nfault_handler_thread():");
@@ -65,11 +62,8 @@ fn fault_handler_thread(uffd: Uffd) {
             }
             fault_cnt += 1;
 
-            let dst = (addr as usize & !(page_size as usize - 1)) as *mut c_void;
-            let copy = unsafe {
-                uffd.copy(page, dst, page_size, true, false)
-                    .expect("uffd copy")
-            };
+            let dst = (addr as usize & !(page_size - 1)) as *mut c_void;
+            let copy = unsafe { uffd.copy(page, dst, page_size, true).expect("uffd copy") };
 
             println!("        (uffdio_copy.copy returned {})", copy);
         } else {
@@ -106,7 +100,7 @@ fn main() {
             len.try_into().unwrap(),
             ProtFlags::PROT_READ | ProtFlags::PROT_WRITE,
             MapFlags::MAP_PRIVATE | MapFlags::MAP_ANONYMOUS,
-            -1,
+            None::<std::os::fd::BorrowedFd>,
             0,
         )
         .expect("mmap")
