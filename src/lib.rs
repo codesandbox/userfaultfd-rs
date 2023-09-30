@@ -97,7 +97,7 @@ impl Uffd {
     /// that are available for the selected range.
     ///
     /// This method only registers the given range for missing page faults.
-    pub fn register(&self, start: *mut c_void, len: usize) -> Result<IoctlFlags> {
+    pub fn register(&self, start: *mut c_void, len: usize) -> Result<()> {
         self.register_with_mode(start, len, RegisterMode::MISSING)
     }
 
@@ -108,7 +108,7 @@ impl Uffd {
         start: *mut c_void,
         len: usize,
         mode: RegisterMode,
-    ) -> Result<IoctlFlags> {
+    ) -> Result<()> {
         let mut register = raw::uffdio_register {
             range: raw::uffdio_range {
                 start: start as u64,
@@ -120,7 +120,9 @@ impl Uffd {
         unsafe {
             raw::register(self.as_raw_fd(), &mut register as *mut raw::uffdio_register)?;
         }
-        IoctlFlags::from_bits(register.ioctls).ok_or(Error::UnrecognizedIoctls(register.ioctls))
+        // Ives: we ignore the check to support Linux 6.5+ as new ioctls were added
+        // IoctlFlags::from_bits(register.ioctls).ok_or(Error::UnrecognizedIoctls(register.ioctls))
+        Ok(())
     }
 
     /// Unregister a memory address range from the userfaultfd object.
