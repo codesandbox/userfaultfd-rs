@@ -97,7 +97,7 @@ impl Uffd {
     /// that are available for the selected range.
     ///
     /// This method only registers the given range for missing page faults.
-    pub fn register(&self, start: *mut c_void, len: usize) -> Result<()> {
+    pub fn register(&self, start: *mut c_void, len: usize) -> Result<IoctlFlags> {
         self.register_with_mode(start, len, RegisterMode::MISSING)
     }
 
@@ -108,7 +108,7 @@ impl Uffd {
         start: *mut c_void,
         len: usize,
         mode: RegisterMode,
-    ) -> Result<()> {
+    ) -> Result<IoctlFlags> {
         let mut register = raw::uffdio_register {
             range: raw::uffdio_range {
                 start: start as u64,
@@ -120,7 +120,7 @@ impl Uffd {
         unsafe {
             raw::register(self.as_raw_fd(), &mut register as *mut raw::uffdio_register)?;
         }
-        Ok(())
+        Ok(IoctlFlags::from_bits_retain(register.ioctls))
     }
 
     /// Unregister a memory address range from the userfaultfd object.
@@ -660,11 +660,13 @@ mod test {
             // the missing fault is handled, it seems. This means we either need to
             // read/write the page *before* we protect it or handle the missing
             // page fault by changing the protection level *after* we zero the page.
-            uffd.register_with_mode(
-                mapping,
-                PAGE_SIZE,
-                RegisterMode::MISSING | RegisterMode::WRITE_PROTECT,
-            )?;
+            assert!(uffd
+                .register_with_mode(
+                    mapping,
+                    PAGE_SIZE,
+                    RegisterMode::MISSING | RegisterMode::WRITE_PROTECT,
+                )?
+                .contains(IoctlFlags::WRITE_PROTECT));
 
             let ptr = mapping as usize;
             let thread = thread::spawn(move || {
