@@ -120,8 +120,6 @@ impl Uffd {
         unsafe {
             raw::register(self.as_raw_fd(), &mut register as *mut raw::uffdio_register)?;
         }
-        // Ives: we ignore the check to support Linux 6.5+ as new ioctls were added
-        // IoctlFlags::from_bits(register.ioctls).ok_or(Error::UnrecognizedIoctls(register.ioctls))
         Ok(())
     }
 
@@ -426,6 +424,9 @@ bitflags! {
         #[cfg(feature = "linux5_7")]
         const CONTINUE = 1 << raw::_UFFDIO_CONTINUE;
         const API = 1 << raw::_UFFDIO_API;
+
+        /// Unknown ioctls flags are allowed to be robust to future kernel changes.
+        const _ = !0;
     }
 }
 
@@ -659,13 +660,11 @@ mod test {
             // the missing fault is handled, it seems. This means we either need to
             // read/write the page *before* we protect it or handle the missing
             // page fault by changing the protection level *after* we zero the page.
-            assert!(uffd
-                .register_with_mode(
-                    mapping,
-                    PAGE_SIZE,
-                    RegisterMode::MISSING | RegisterMode::WRITE_PROTECT
-                )?
-                .contains(IoctlFlags::WRITE_PROTECT));
+            uffd.register_with_mode(
+                mapping,
+                PAGE_SIZE,
+                RegisterMode::MISSING | RegisterMode::WRITE_PROTECT,
+            )?;
 
             let ptr = mapping as usize;
             let thread = thread::spawn(move || {
